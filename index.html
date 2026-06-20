@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Launch Window</title>
+<style>
+  :root{
+    --bg:#0a0e14;
+    --panel:#10151d;
+    --panel-2:#161c26;
+    --line:#232b38;
+    --text:#e8ecf1;
+    --dim:#7c8798;
+    --amber:#ff9f40;
+    --amber-dim:#7a5328;
+    --green:#5fd98a;
+    --red:#ff6b6b;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    --disp: 'Space Grotesk', 'Arial Narrow', sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--mono); -webkit-font-smoothing:antialiased;}
+  body{padding-bottom:48px;}
+  .wrap{max-width:520px; margin:0 auto; padding:18px 16px 0;}
+
+  header{display:flex; align-items:baseline; justify-content:space-between; padding:6px 2px 16px; border-bottom:1px solid var(--line); margin-bottom:18px;}
+  header .brand{font-family:var(--disp); font-weight:700; font-size:20px; letter-spacing:0.5px;}
+  header .brand span{color:var(--amber);}
+  header .clock{font-size:11px; color:var(--dim);}
+
+  .tabs{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto; padding:7px 14px; border:1px solid var(--line); border-radius:20px; font-size:13px; color:var(--dim); background:var(--panel); cursor:pointer; font-family:var(--mono); white-space:nowrap;}
+  .tab.active{border-color:var(--amber); color:var(--amber); background:rgba(255,159,64,0.1);}
+  .tab.add{color:var(--green); border-color:var(--green); border-style:dashed;}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  .card h2{margin:0 0 12px; font-family:var(--disp); font-size:14px; letter-spacing:1.5px; color:var(--dim); text-transform:uppercase; font-weight:600;}
+
+  .gauge-wrap{position:relative; padding:8px 0 4px;}
+  .gauge-track{position:relative; height:54px; border-radius:8px; background:linear-gradient(90deg, rgba(255,107,107,0.12), rgba(95,217,138,0.12) 35%, rgba(95,217,138,0.12) 65%, rgba(255,107,107,0.12) 100%); border:1px solid var(--line); overflow:hidden;}
+  .gauge-zone-labels{display:flex; justify-content:space-between; font-size:10px; color:var(--dim); margin-top:6px; padding:0 2px;}
+  .gauge-marker{position:absolute; top:0; bottom:0; width:2px; background:var(--amber); box-shadow:0 0 8px var(--amber);}
+  .gauge-marker::after{content:attr(data-price); position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--amber); white-space:nowrap; font-weight:600;}
+  .gauge-target{position:absolute; top:0; bottom:0; width:1px; background:var(--dim); opacity:0.6;}
+  .gauge-target::after{content:attr(data-label); position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--dim); white-space:nowrap;}
+  .status-line{display:flex; align-items:center; gap:8px; margin-top:26px; font-size:13px;}
+  .status-dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto;}
+  .status-text{font-family:var(--disp); font-weight:600; font-size:15px;}
+
+  .row{display:flex; gap:10px; margin-bottom:10px;}
+  .field{flex:1; display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.8px;}
+  .field input{background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:9px 10px; border-radius:8px; font-family:var(--mono); font-size:14px; width:100%;}
+  .field input:focus{outline:none; border-color:var(--amber);}
+  .btn{background:var(--amber); color:#1a1206; border:none; padding:10px 16px; border-radius:8px; font-family:var(--disp); font-weight:700; font-size:13px; cursor:pointer; letter-spacing:0.3px;}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--text);}
+  .btn.danger{background:transparent; border:1px solid var(--red); color:var(--red);}
+  .btn:active{transform:scale(0.97);}
+
+  .check-item{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .check-item:last-child{border-bottom:none;}
+  .check-item input[type=checkbox]{width:18px; height:18px; margin-top:1px; accent-color:var(--amber); flex:0 0 auto;}
+  .check-item .ci-text{font-size:13px; line-height:1.4;}
+  .check-item .ci-text small{display:block; color:var(--dim); font-size:11px; margin-top:2px;}
+  .check-item.done .ci-text{color:var(--dim); text-decoration:line-through;}
+
+  .journal-entry{padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .journal-entry:last-child{border-bottom:none;}
+  .journal-entry .je-meta{font-size:10px; color:var(--dim); margin-bottom:4px; letter-spacing:0.5px;}
+  textarea{background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:10px; border-radius:8px; font-family:var(--mono); font-size:13px; width:100%; resize:vertical; min-height:60px;}
+  textarea:focus{outline:none; border-color:var(--amber);}
+
+  .reminder-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);}
+  .reminder-row:last-child{border-bottom:none;}
+  .reminder-info .ri-freq{font-family:var(--disp); font-weight:700; font-size:14px;}
+  .reminder-info .ri-sub{font-size:11px; color:var(--dim);}
+  .switch{position:relative; width:42px; height:24px; flex:0 0 auto;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--panel-2); border:1px solid var(--line); border-radius:24px; cursor:pointer; transition:0.15s;}
+  .slider::before{content:''; position:absolute; width:18px; height:18px; left:2px; top:2px; background:var(--dim); border-radius:50%; transition:0.15s;}
+  input:checked + .slider{background:rgba(255,159,64,0.15); border-color:var(--amber);}
+  input:checked + .slider::before{transform:translateX(18px); background:var(--amber);}
+
+  .empty{color:var(--dim); font-size:12px; padding:8px 0; text-align:center;}
+  .hint{font-size:11px; color:var(--dim); margin-top:10px; line-height:1.5;}
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--amber); color:#1a1206; padding:10px 18px; border-radius:8px; font-family:var(--disp); font-weight:700; font-size:13px; opacity:0; transition:0.25s; pointer-events:none; z-index:50;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">LAUNCH<span>WINDOW</span></div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'launchwindow_v1';
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { tickers: { RKLB: defaultTicker('RKLB') }, active: 'RKLB' };
+}
+function defaultTicker(sym){
+  return {
+    symbol: sym,
+    floor: '', trim: '', target: '', current: '',
+    notes: [],
+    catalysts: [
+      {id:1, text:'SpaceX news (IPO, valuation updates)', sub:'this affects how investors value RKLB too', done:false},
+      {id:2, text:'New NASA or government contract for RKLB', sub:'more contracts = more future revenue', done:false},
+      {id:3, text:'A rocket launch succeeds or gets delayed', sub:'big news days for the stock', done:false},
+      {id:4, text:'Space/tech stocks in general going up or down', sub:'sometimes RKLB moves with the whole group, not just its own news', done:false},
+      {id:5, text:'RKLB reports earnings (quarterly results)', sub:'usually a big price swing day', done:false}
+    ],
+    reminder: {freq:'weekly', enabled:false, lastFired:0}
+  };
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function fmtMoney(v){ if(v === '' || v === null || isNaN(v)) return '—'; return '$' + parseFloat(v).toFixed(2); }
+function updateClock(){ document.getElementById('clock').textContent = new Date().toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit'}); }
+updateClock(); setInterval(updateClock, 30000);
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  Object.keys(state.tickers).forEach(sym=>{
+    const el = document.createElement('div');
+    el.className = 'tab' + (sym === state.active ? ' active' : '');
+    el.textContent = sym;
+    el.onclick = ()=>{ state.active = sym; saveState(); render(); };
+    tabs.appendChild(el);
+  });
+  const add = document.createElement('div');
+  add.className = 'tab add';
+  add.textContent = '+ add';
+  add.onclick = ()=>{
+    const sym = prompt('Ticker symbol to track:');
+    if(!sym) return;
+    const clean = sym.trim().toUpperCase();
+    if(!clean) return;
+    if(!state.tickers[clean]) state.tickers[clean] = defaultTicker(clean);
+    state.active = clean;
+    saveState(); render();
+  };
+  tabs.appendChild(add);
+}
+
+function gaugePercent(price, floor, trim){
+  const f = parseFloat(floor), t = parseFloat(trim), p = parseFloat(price);
+  if(isNaN(f) || isNaN(t) || isNaN(p)) return null;
+  const pad = (t - f) * 0.6 || 1;
+  const lo = f - pad, hi = t + pad;
+  let pct = ((p - lo) / (hi - lo)) * 100;
+  return Math.max(2, Math.min(98, pct));
+}
+function statusFor(price, floor, trim){
+  const p = parseFloat(price), f = parseFloat(floor), t = parseFloat(trim);
+  if(isNaN(p) || isNaN(f) || isNaN(t)) return {label:'Fill in a price and your buy/sell levels below to see this', color:'var(--dim)'};
+  if(p <= f) return {label:'Price hit your buy level — might be a good time to buy more', color:'var(--green)'};
+  if(p >= t) return {label:'Price hit your sell level — might be a good time to sell some', color:'var(--red)'};
+  return {label:'Price is in between — no action needed, just keep watching', color:'var(--amber)'};
+}
+
+function render(){
+  renderTabs();
+  const t = state.tickers[state.active];
+  const content = document.getElementById('content');
+  if(!t){ content.innerHTML = '<div class="empty">No ticker selected.</div>'; return; }
+
+  const pct = gaugePercent(t.current, t.floor, t.trim);
+  const st = statusFor(t.current, t.floor, t.trim);
+
+  content.innerHTML = `
+    <div class="card">
+      <h2>${t.symbol} — Where's the price now?</h2>
+      <div class="gauge-wrap">
+        <div class="gauge-track">
+          ${ (!isNaN(parseFloat(t.floor)) && !isNaN(parseFloat(t.trim))) ? `
+            <div class="gauge-target" style="left:${gaugePercent(t.floor,t.floor,t.trim)}%" data-label="buy ${fmtMoney(t.floor)}"></div>
+            <div class="gauge-target" style="left:${gaugePercent(t.trim,t.floor,t.trim)}%" data-label="sell ${fmtMoney(t.trim)}"></div>
+          ` : '' }
+          ${ pct !== null ? `<div class="gauge-marker" style="left:${pct}%" data-price="${fmtMoney(t.current)}"></div>` : '' }
+        </div>
+        <div class="gauge-zone-labels"><span>good time to buy</span><span>just hold</span><span>good time to sell</span></div>
+        <div class="status-line"><div class="status-dot" style="background:${st.color}"></div><div class="status-text" style="color:${st.color}">${st.label}</div></div>
+      </div>
+
+      <div class="row" style="margin-top:16px; align-items:flex-end;">
+        <div class="field"><label>Price right now</label><input type="number" step="0.01" id="in-current" value="${t.current}" placeholder="0.00"></div>
+        <button class="btn ghost" id="fetch-price" style="flex:0 0 auto; height:38px;">⟳ Get latest</button>
+      </div>
+      <div id="fetch-status" class="hint" style="margin-top:-4px;"></div>
+      <div class="row" style="margin-top:10px;">
+        <div class="field"><label>Buy more if it drops to</label><input type="number" step="0.01" id="in-floor" value="${t.floor}" placeholder="0.00"></div>
+        <div class="field"><label>Sell some if it rises to</label><input type="number" step="0.01" id="in-trim" value="${t.trim}" placeholder="0.00"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Dream price (optional)</label><input type="number" step="0.01" id="in-target" value="${t.target}" placeholder="optional"></div>
+        <div class="field" style="justify-content:flex-end;"><button class="btn" id="save-prices" style="width:100%;">Save</button></div>
+      </div>
+      <div class="hint">Tap "Get latest" to pull a live price automatically. If your phone's network blocks it, type the price in yourself — you can find it by searching the ticker on Google or checking your broker app.</div>
+    </div>
+
+    <div class="card">
+      <h2>Things that might move the price</h2>
+      <div id="catalyst-list"></div>
+      <button class="btn ghost" id="add-catalyst" style="width:100%; margin-top:10px;">+ Add something to watch for</button>
+    </div>
+
+    <div class="card">
+      <h2>Remind me to check in</h2>
+      <div class="reminder-row">
+        <div class="reminder-info">
+          <div class="ri-freq">${t.reminder.freq.charAt(0).toUpperCase()+t.reminder.freq.slice(1)} reminder</div>
+          <div class="ri-sub">${t.reminder.enabled ? 'Will pop up while this is open' : 'Off'}</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="reminder-toggle" ${t.reminder.enabled?'checked':''}><span class="slider"></span></label>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <div class="field">
+          <label>How often</label>
+          <select id="reminder-freq" style="background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:9px 10px; border-radius:8px; font-family:var(--mono); font-size:14px;">
+            <option value="daily" ${t.reminder.freq==='daily'?'selected':''}>Every day</option>
+            <option value="weekly" ${t.reminder.freq==='weekly'?'selected':''}>Every week</option>
+            <option value="biweekly" ${t.reminder.freq==='biweekly'?'selected':''}>Every 2 weeks</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">Heads up: this only reminds you while the app is open on screen — phones don't let a simple webpage send reminders in the background. For a real ping on your lock screen, also set a repeating reminder in your phone's own Reminders/Clock app to open this page.</div>
+    </div>
+
+    <div class="card">
+      <h2>Notes to yourself</h2>
+      <textarea id="journal-input" placeholder="Why are you holding this stock? What would make you change your mind?"></textarea>
+      <button class="btn" id="add-journal" style="width:100%; margin-top:10px;">Add note</button>
+      <div id="journal-list" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn danger" id="remove-ticker" style="width:100%;">Remove ${t.symbol}</button>
+    </div>
+  `;
+
+  const cl = document.getElementById('catalyst-list');
+  if(t.catalysts.length === 0){
+    cl.innerHTML = '<div class="empty">No catalysts yet.</div>';
+  } else {
+    cl.innerHTML = t.catalysts.map(c => `
+      <div class="check-item ${c.done?'done':''}">
+        <input type="checkbox" data-id="${c.id}" class="cat-check" ${c.done?'checked':''}>
+        <div class="ci-text">${c.text}${c.sub ? `<small>${c.sub}</small>` : ''}</div>
+      </div>
+    `).join('');
+    cl.querySelectorAll('.cat-check').forEach(cb=>{
+      cb.onchange = ()=>{
+        const id = parseInt(cb.dataset.id);
+        const c = t.catalysts.find(x=>x.id===id);
+        c.done = cb.checked;
+        saveState(); render();
+      };
+    });
+  }
+  document.getElementById('add-catalyst').onclick = ()=>{
+    const text = prompt('What should trigger a re-check?');
+    if(!text) return;
+    const id = Date.now();
+    t.catalysts.push({id, text, sub:'', done:false});
+    saveState(); render();
+  };
+
+  const jl = document.getElementById('journal-list');
+  if(t.notes.length === 0){
+    jl.innerHTML = '<div class="empty">No entries yet.</div>';
+  } else {
+    jl.innerHTML = t.notes.slice().reverse().map(n => `
+      <div class="journal-entry">
+        <div class="je-meta">${new Date(n.ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</div>
+        ${n.text}
+      </div>
+    `).join('');
+  }
+  document.getElementById('add-journal').onclick = ()=>{
+    const ta = document.getElementById('journal-input');
+    if(!ta.value.trim()) return;
+    t.notes.push({ts: Date.now(), text: ta.value.trim()});
+    ta.value = '';
+    saveState(); render();
+  };
+
+  document.getElementById('fetch-price').onclick = async ()=>{
+    const statusEl = document.getElementById('fetch-status');
+    statusEl.textContent = 'Looking it up...';
+    try{
+      const price = await fetchPrice(t.symbol);
+      if(price){
+        document.getElementById('in-current').value = price.toFixed(2);
+        t.current = price.toFixed(2);
+        saveState(); render();
+        toast(`${t.symbol} is at $${price.toFixed(2)}`);
+      } else {
+        statusEl.textContent = "Couldn't find a price for that — try typing it in instead.";
+      }
+    }catch(e){
+      statusEl.textContent = "Couldn't reach a price source right now — type the price in yourself instead.";
+    }
+  };
+
+  document.getElementById('save-prices').onclick = ()=>{
+    t.current = document.getElementById('in-current').value;
+    t.floor = document.getElementById('in-floor').value;
+    t.trim = document.getElementById('in-trim').value;
+    t.target = document.getElementById('in-target').value;
+    saveState(); render();
+    toast('Updated');
+  };
+
+  document.getElementById('reminder-toggle').onchange = (e)=>{
+    t.reminder.enabled = e.target.checked;
+    if(t.reminder.enabled && 'Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+    saveState(); render();
+  };
+  document.getElementById('reminder-freq').onchange = (e)=>{
+    t.reminder.freq = e.target.value;
+    saveState();
+  };
+
+  document.getElementById('remove-ticker').onclick = ()=>{
+    if(!confirm(`Remove ${t.symbol} from your watchlist?`)) return;
+    delete state.tickers[t.symbol];
+    const remaining = Object.keys(state.tickers);
+    state.active = remaining[0] || null;
+    if(!state.active){ state.tickers.RKLB = defaultTicker('RKLB'); state.active = 'RKLB'; }
+    saveState(); render();
+  };
+}
+
+const FREQ_MS = {daily: 86400000, weekly: 604800000, biweekly: 1209600000};
+
+async function fetchPrice(symbol){
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('bad response');
+  const data = await res.json();
+  const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+  if(typeof price === 'number') return price;
+  return null;
+}
+
+function checkReminders(){
+  let dirty = false;
+  Object.values(state.tickers).forEach(t=>{
+    if(!t.reminder.enabled) return;
+    const interval = FREQ_MS[t.reminder.freq] || FREQ_MS.weekly;
+    const now = Date.now();
+    if(!t.reminder.lastFired) t.reminder.lastFired = now;
+    if(now - t.reminder.lastFired >= interval){
+      t.reminder.lastFired = now;
+      dirty = true;
+      const msg = `Time to check ${t.symbol} — see if the price moved.`;
+      if('Notification' in window && Notification.permission === 'granted'){
+        new Notification('Launch Window', {body: msg});
+      } else {
+        toast(msg);
+      }
+    }
+  });
+  if(dirty) saveState();
+}
+setInterval(checkReminders, 60000);
+
+render();
+</script>
+</body>
+</html>
